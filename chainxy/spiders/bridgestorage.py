@@ -48,8 +48,6 @@ class bridgestorage(scrapy.Spider):
 
 		self.driver = webdriver.Chrome(chrome_options=chrome_options)
 
-		pass
-
 	
 	def start_requests(self):
 
@@ -134,8 +132,7 @@ class bridgestorage(scrapy.Spider):
 
 				pass
 
-		pdb.set_trace()
-		# sheet.update_cells(cell_list)
+		sheet.update_cells(cell_list)
 
 
 	def validate(self, item):
