@@ -29,6 +29,7 @@ import gspread
 
 from oauth2client.service_account import ServiceAccountCredentials
 
+import arrow
 
 
 class bridgestorage(scrapy.Spider):
@@ -38,7 +39,6 @@ class bridgestorage(scrapy.Spider):
 	domain = ''
 
 	history = []
-
 
 	def __init__(self):
 
@@ -90,6 +90,16 @@ class bridgestorage(scrapy.Spider):
 
 		dump_data = []
 
+		changes_data = []
+
+		addtional_data = []
+
+		transaction_sheet = sh.get_worksheet(3)
+
+		changes_origin_data = transaction_sheet.get_all_records()
+
+		today = arrow.now().format('DD/MM/YYYY')
+
 		for rec in rec_list[1:]:
 
 			item = ChainItem()
@@ -101,6 +111,38 @@ class bridgestorage(scrapy.Spider):
 				if len(data) == 11:
 
 					data.append('')
+
+				for origin in origin_data:
+
+					if str(origin['Unit']) == str(data[0]):
+
+						if str(origin['Rental Rate']) != str(data[8]):
+
+							new_che = [data[2],data[0], today, data[8]]
+
+							if len(changes_origin_data) != 0:
+
+								ch_flag = True
+
+								for che in changes_origin_data:
+
+									if str(che['Unit']) == str(data[0]):
+
+										if str(che['NewRent']) != str(data[8]) and str(che['IncreaseDate']) != str(today):
+
+											changes_data.append(new_che)
+
+										ch_flag = False
+
+								if ch_flag == True:
+
+									changes_data.append(new_che)
+
+							else :
+
+								changes_data.append(new_che)
+
+							addtional_data.append(data)
 
 				dump_data.append(data)
 
@@ -132,7 +174,36 @@ class bridgestorage(scrapy.Spider):
 
 				pass
 
+
 		sheet.update_cells(cell_list)
+
+		changes_index = len(changes_origin_data) + 2
+
+		changes_list = transaction_sheet.range('A'+str(changes_index)+':D'+str(len(changes_data)+changes_index))
+
+		ch_row_num = 0
+
+		ch_col_num = 0
+
+		for ch_idx, change in enumerate(changes_list):
+
+			try:
+
+				if ch_idx > 2 and ch_idx % 4 == 0:
+
+					ch_row_num += 1
+
+					ch_col_num = 0
+
+				change.value = changes_data[ch_row_num][ch_col_num].replace("'", '')
+
+				ch_col_num += 1
+
+			except:
+
+				pass
+
+		transaction_sheet.update_cells(changes_list)
 
 
 	def validate(self, item):
